@@ -4,7 +4,7 @@
 
 Download training set from google drive and unzip in root
 
-Create conda environment with `conda env create -f environment.yml`
+Create conda environnment with `conda env create -f environment.yml`
 
 Activate conda enviroment and download videos with `conda activate video-mem && python setup.py`
 
@@ -17,10 +17,10 @@ Activate conda enviroment and download videos with `conda activate video-mem && 
 ```
 - training_set/         #Data belongs here
   - Features/
-  - Videos/
+  - Videos/             #Created by setup.py
   - video_urls.csv
   - ...
-- setup.py
+- setup.py              #Downloads videos
 - README.md
 - environment.yml
 - train.ipynb           #Training workflow
