@@ -8,13 +8,14 @@ Create conda environment with `conda env create -f environment.yml`
 
 Activate conda enviroment and download videos with `conda activate video-mem && python setup.py`
 
-## Running Jupyter
+## Running a Jupyter Server
 
 `conda activate video-mem && jupyter notebook .`
 
 ## File structure
 
-- training_set/
+```
+- training_set/         #Data belongs here
   - Features/
   - Videos/
   - video_urls.csv
@@ -22,3 +23,5 @@ Activate conda enviroment and download videos with `conda activate video-mem && 
 - setup.py
 - README.md
 - environment.yml
+- train.ipynb           #Training workflow
+```
