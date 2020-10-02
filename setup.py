@@ -41,7 +41,7 @@ if __name__ == "__main__":
             f for f in os.listdir(VIDEO_DIR) if f[-4:] == ".mp4"]
         for video_filename in tqdm.tqdm(video_filenames, desc="Extracting audio"):
             video_path = f"{VIDEO_DIR}/{video_filename}"
-            filename = f"{AUDIO_DIR}/{video_filename[:-4]}.mp3"
+            filename = f"{AUDIO_DIR}/{video_filename[:-4]}.wav"
             if not os.path.exists(filename):
                 extract_audio(video_path, filename)
 
