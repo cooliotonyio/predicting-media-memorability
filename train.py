@@ -12,10 +12,12 @@ def average_predictions(predictions, actuals, video_ids):
         actuals_per_video[video_id].append(actual)
     avg_predictions = []
     avg_actuals = []
+    avg_video_ids = []
     for vid in np.unique(video_ids):
         avg_predictions.append(np.mean(predictions_per_video[vid]))
         avg_actuals.append(np.mean(actuals_per_video[vid]))
-    return avg_predictions, avg_actuals
+        avg_video_ids.append(vid)
+    return avg_predictions, avg_actuals, avg_video_ids
 
 def split_training(data: pd.DataFrame, shuffle=True, split=0.8):
     ids = np.random.permutation(list(data.index)) if shuffle else list(data.index)
