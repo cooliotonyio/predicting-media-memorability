@@ -4,8 +4,14 @@ import subprocess
 import tqdm
 import pandas as pd
 
-VIDEO_DIR = "training_set/Videos"
-AUDIO_DIR = "training_set/Audio"
+# Replace with development_set or testing_set
+DATASET = "training_set"
+
+VIDEO_DIR = f"{DATASET}/Videos"
+AUDIO_DIR = f"{DATASET}/Audio"
+
+# Replace with dev_video_urls.csv or test_urls.csv
+VIDEO_URLS_CSV = f"{DATASET}/video_urls.csv"
 
 
 def download_video(name, url):
@@ -22,11 +28,9 @@ def extract_audio(video_path, filename):
 
 
 if __name__ == "__main__":
-    if os.path.exists("training_set/video_urls.csv"):
-
+    if os.path.exists(VIDEO_URLS_CSV):
         # Download videos
-        videos = pd.read_csv(
-            "training_set/video_urls.csv").set_index("video_id")
+        videos = pd.read_csv(VIDEO_URLS_CSV).set_index("video_id")
         if not os.path.exists(VIDEO_DIR):
             os.mkdir(VIDEO_DIR)
         for v, b in tqdm.tqdm(list(videos.iterrows()), desc="Downloading videos"):
@@ -46,5 +50,5 @@ if __name__ == "__main__":
                 extract_audio(video_path, filename)
 
     else:
-        print("Could not find training_set!")
+        print(f"Could not find {VIDEO_URLS_CSV}!")
     print("Finished setup")
