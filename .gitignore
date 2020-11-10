@@ -3,3 +3,4 @@ training_set/
 .vscode/
 downloads/
 saved_models/
+__pycache__
