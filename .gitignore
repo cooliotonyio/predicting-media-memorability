@@ -1,5 +1,7 @@
 .ipynb_checkpoints/
 training_set/
+development_set/
+testing_set/
 .vscode/
 downloads/
 saved_models/
