@@ -24,9 +24,8 @@ def sort_predictions(predictions, actuals, video_ids):
 def aggregate_predictions(predictions, actuals, video_ids, aggregator):
     predictions_per_video, actuals, unique_vids = sort_predictions(
         predictions, actuals, video_ids)
-    aggregated_predictions = []
-    for vid in unique_vids:
-        aggregated_predictions.append(aggregator(predictions_per_video[vid]))
+    aggregated_predictions = [
+        aggregator(predictions_per_video[vid]) for vid in unique_vids]
     return aggregated_predictions, actuals, unique_vids
 
 
