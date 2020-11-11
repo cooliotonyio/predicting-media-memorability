@@ -6,17 +6,17 @@ import pandas as pd
 import numpy as np
 import cv2
 
+from features.config import NUM_FRAMES_PER_VIDEO
+
 # Replace with development_set or testing_set
-DATASET = "testing_set"
+DATASET = "training_set"
 
 VIDEO_DIR = f"{DATASET}/Videos"
 AUDIO_DIR = f"{DATASET}/Audio"
 FRAME_DIR = f"{DATASET}/Frames"
 
-NUM_FRAMES_PER_VIDEO = 8  # number of frame we want to extract
-
 # Replace with dev_video_urls.csv or test_urls.csv
-VIDEO_URLS_CSV = f"{DATASET}/test_urls.csv"
+VIDEO_URLS_CSV = f"{DATASET}/video_urls.csv"
 
 
 def download_video(name, url):
@@ -78,20 +78,21 @@ def extract_num_frames(video_filename, num_frames, frame_dir=FRAME_DIR, video_di
         if not os.path.exists(frame_filename):
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index - 1)
             res, frame = cap.read()
+            cap.release()
             if res == 0:
                 frame, frame_index = get_frame_iteratively(
                     video_path, frame_index)
                 frame_filename = f"{frames_folder}/{str(frame_index).zfill(3)}.png"
-            else:
-                cv2.imwrite(frame_filename, frame)
-
-    cap.release()
+            cv2.imwrite(frame_filename, frame)
 
 
 if __name__ == "__main__":
     if os.path.exists(VIDEO_URLS_CSV):
-        # Download videos
+
+        print(f"Opening {VIDEO_URLS_CSV}...")
         videos = pd.read_csv(VIDEO_URLS_CSV).set_index("video_id")
+
+        # Download videos
         if not os.path.exists(VIDEO_DIR):
             os.mkdir(VIDEO_DIR)
         for v, b in tqdm.tqdm(list(videos.iterrows()), desc="Downloading videos"):
