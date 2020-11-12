@@ -82,15 +82,16 @@ def extract_text_features(video_ids, captions, tokenizer, word_embeddings, featu
         tokenizer.word_index, word_embeddings, embedding_dim, max_sequence_length)
     features = extractor.predict(sequences)
 
+    caption_counts = {vid: 0 for vid in np.unique(video_ids)}
     for video_id, feature in tqdm(list(zip(video_ids, features))):
         video_feature_dir = f"{feature_dir}/{video_id}"
 
         if not os.path.exists(video_feature_dir):
             os.mkdir(video_feature_dir)
 
-        # i-th extracted caption of the video
-        i = len(os.listdir(video_feature_dir))
-        np.savetxt(f"{video_feature_dir}/{i}.csv", feature, delimiter=",")
+        caption_feature_filename = f"{video_feature_dir}/{caption_counts[video_id]}.csv"
+        np.savetxt(caption_feature_filename, feature, delimiter=",")
+        caption_counts[video_id] += 1
 
 
 def extract_GLoVe_features(video_ids, captions, tokenizer, max_sequence_length, feature_dir=GLOVE_FEATURE_DIR, embedding_dim=GLOVE_WORD_EMBEDDING_DIM):
