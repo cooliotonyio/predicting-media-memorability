@@ -4,6 +4,10 @@ import numpy as np
 from sklearn.svm import SVR
 import torch
 
+from tensorflow.keras.layers import Input, GRU, Dense, Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+
 
 def sort_predictions(predictions, actuals, video_ids):
     unique_vids = np.unique(video_ids)
@@ -56,6 +60,11 @@ def build_matrixes(data, target_name, feature_name, dtype=np.float32):
                 targets.append(target)
                 video_ids.append(video_id)
                 features.append(embedding)
+        elif len(feature.shape) == 3:
+            for embedding in feature:
+                targets.append(target)
+                video_ids.append(video_id)
+                features.append(embedding)
         else:
             raise RuntimeError(
                 f"Provided feature has unexpected number of dimensions: {len(feature.shape)}")
@@ -69,6 +78,9 @@ def get_predictions(model_type, model, features, targets, video_ids, aggregate_w
         predictions, actuals = get_nn_predictions(model, features, targets)
     elif "svr" == model_type:
         predictions, actuals = get_svr_predictions(model, features, targets)
+    elif "gru" == model_type:
+        predictions = model.predict(features).ravel()
+        actuals = targets.ravel()
     else:
         raise ValueError(f"'{model_type}' is not a valid model type")
 
@@ -97,11 +109,13 @@ class TwoLayerNet(torch.nn.Module):
         self.linear1 = torch.nn.Linear(input_dim, hidden_dim)
         self.tanh = torch.nn.Tanh()
         self.linear2 = torch.nn.Linear(hidden_dim, output_dim)
+        self.sigmoid = torch.nn.Sigmoid()
 
     def forward(self, x):
         x = self.linear1(x)
         x = self.tanh(x)
         x = self.linear2(x)
+        x = self.sigmoid(x)
         return x
 
 
@@ -110,10 +124,10 @@ def train_two_layer_nn(features_train,
                        features_valid,
                        targets_valid,
                        hidden_dim=256,
+                       learning_rate=1e-3,
                        num_epochs=15,
                        cuda=True,
                        batch_size=32,
-                       learning_rate=1e-3,
                        verbose=False):
     data_train = FlatDataset(features_train, targets_train)
     data_valid = FlatDataset(features_valid, targets_valid)
@@ -122,6 +136,89 @@ def train_two_layer_nn(features_train,
     print("input dimensions:", input_dim) if verbose else 0
     print("output dimension:", output_dim) if verbose else 0
     model = TwoLayerNet(input_dim, output_dim, hidden_dim=hidden_dim)
+
+    trained_model, train_losses, valid_losses = train_nn(
+        model, data_train, data_valid,
+        num_epochs=num_epochs, cuda=cuda, batch_size=batch_size, learning_rate=learning_rate, verbose=verbose)
+
+    return trained_model, train_losses, valid_losses
+
+
+def build_gru_model(input_dim, gru_units, gru_dropout, lin_dropout, hidden_dim, seed):
+    input_layer = Input(shape=input_dim)
+    x = GRU(
+        units=gru_units,
+        dropout=gru_dropout,
+        recurrent_dropout=gru_dropout,
+        return_sequences=False
+    )(input_layer)
+    x = Dense(1024, activation="relu")(x)
+    x = Dropout(lin_dropout, seed=seed)(x)
+    x = Dense(512, activation="relu")(x)
+    x = Dropout(lin_dropout, seed=seed)(x)
+    x = Dense(256, activation="relu")(x)
+    x = Dropout(lin_dropout, seed=seed)(x)
+    output_layer = Dense(1, activation='sigmoid')(x)
+    return Model(input_layer, output_layer)
+
+
+def train_gru(features_train,
+              targets_train,
+              features_valid,
+              targets_valid,
+              gru_units=64,
+              gru_dropout=0.75,
+              lin_dropout=0.25,
+              hidden_dim=1024,
+              learning_rate=1e-3,
+              num_epochs=15,
+              cuda=True,
+              batch_size=32,
+              verbose=False,
+              seed=1):
+
+    input_dim = features_train[0].shape
+    print("input dimensions:", input_dim) if verbose else 0
+    print("hidden dimension:", hidden_dim) if verbose else 0
+    model = build_gru_model(
+        input_dim=input_dim,
+        gru_units=gru_units,
+        gru_dropout=gru_dropout,
+        lin_dropout=lin_dropout,
+        hidden_dim=hidden_dim,
+        seed=seed
+    )
+
+    optimizer = Adam(lr=learning_rate, decay=learning_rate / num_epochs)
+
+    model.compile(
+        loss="mean_squared_error",
+        optimizer=optimizer,
+        metrics=["mse", "mae", "mape"]
+    )
+
+    H = model.fit(features_train, targets_train,
+                  validation_data=(features_valid, targets_valid),
+                  epochs=num_epochs,
+                  shuffle=False,
+                  batch_size=32,
+                  use_multiprocessing=True,
+                  workers=8)
+
+    train_losses = H.history["loss"]
+    valid_losses = H.history["val_loss"]
+
+    return model, train_losses, valid_losses
+
+
+def train_nn(model,
+             data_train,
+             data_valid,
+             num_epochs,
+             cuda,
+             batch_size,
+             learning_rate,
+             verbose):
 
     device = torch.device("cuda") if cuda else torch.device("cpu")
     model = model.float().to(device)
@@ -163,7 +260,7 @@ def train_two_layer_nn(features_train,
 
         return train_loss, valid_loss
 
-    best_valid_loss = 9999999
+    best_valid_loss = np.infty
     best_model_state_dict = copy.deepcopy(model.state_dict())
     train_losses = []
     valid_losses = []
