@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from features.config import GLOVE_WORD_EMBEDDINGS_PATH, GLOVE_WORD_EMBEDDING_DIM, GLOVE_FEATURE_DIR
+from features.config import GLOVE_WORD_EMBEDDINGS_PATH, GLOVE_WORD_EMBEDDING_DIM, GLOVE_FEATURE_DIR, BOW_FEATURE_DIR
 
 
 def load_GloVe_features(video_ids, path=GLOVE_FEATURE_DIR):
